@@ -44,6 +44,7 @@ export default function Dashboard() {
   const [active, setActive] = useState('profile');
   const [data, setData] = useState(() => loadPortfolio(user) ?? emptyPortfolio('', user));
   const [status, setStatus] = useState('');
+  const [previewHtml, setPreviewHtml] = useState(null);
 
   // Save on every change so nothing is lost on refresh
   useEffect(() => {
@@ -52,32 +53,53 @@ export default function Dashboard() {
 
   const update = (changes) => setData((prev) => ({ ...prev, ...changes }));
 
+  const fileName = () => {
+    const slug = (data.name || 'my')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    return `${slug || 'my'}-portfolio.html`;
+  };
+
+  // Step 1: build the HTML and show it in a preview (no download yet)
   const generate = () => {
     try {
-      setStatus('Generating...');
-      const html = generatePortfolioHTML(data);
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const slug = (data.name || 'my')
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${slug || 'my'}-portfolio.html`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-
-      setStatus(`Downloaded ${slug || 'my'}-portfolio.html`);
+      setPreviewHtml(generatePortfolioHTML(data));
+      setStatus('');
     } catch (err) {
       console.error('Portfolio generation failed:', err);
       setStatus('Error: ' + err.message);
     }
   };
+
+  // Step 2: only after the user has seen the preview, download it
+  const download = () => {
+    if (!previewHtml) return;
+    const blob = new Blob([previewHtml], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const name = fileName();
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+    setStatus(`Downloaded ${name}`);
+  };
+
+  const closePreview = () => setPreviewHtml(null);
+
+  // Close the preview with the Escape key
+  useEffect(() => {
+    if (!previewHtml) return undefined;
+    const onKey = (e) => e.key === 'Escape' && setPreviewHtml(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewHtml]);
 
   return (
     <div className="dash">
@@ -101,7 +123,7 @@ export default function Dashboard() {
 
         <div className="sidebar-foot">
           <p className="muted small">{user}</p>
-          <button className="btn block" onClick={generate}>Generate portfolio</button>
+          <button className="btn block" onClick={generate}>Generate &amp; preview</button>
           {status && <p className="muted small">{status}</p>}
           <button className="btn secondary block" onClick={logout}>Log out</button>
         </div>
@@ -114,6 +136,39 @@ export default function Dashboard() {
         {active === 'experience' && <ExperienceSection data={data} update={update} />}
         {active === 'projects' && <ProjectsSection data={data} update={update} />}
       </main>
+
+      {previewHtml && (
+        <div className="preview-overlay" onClick={closePreview}>
+          <div
+            className="preview-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Portfolio preview"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="preview-bar">
+              <div>
+                <strong>Preview</strong>
+                <span className="muted small"> · {fileName()}</span>
+              </div>
+              <div className="preview-actions">
+                <button className="btn secondary small" onClick={closePreview}>
+                  Back to editor
+                </button>
+                <button className="btn small" onClick={download}>
+                  ⬇ Download
+                </button>
+              </div>
+            </div>
+            <iframe
+              className="preview-frame"
+              title="Portfolio preview"
+              srcDoc={previewHtml}
+              sandbox="allow-popups allow-popups-to-escape-sandbox"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -572,3 +572,49 @@ select {
   .inline-form { flex-direction: column; border-radius: var(--radius-lg); }
   .inline-form .btn { width: 100%; }
 }
+/* ---------- Portfolio preview modal ---------- */
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(20, 19, 15, .6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.preview-modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  width: min(1100px, 100%);
+  height: min(90vh, 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: .8rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.preview-actions { display: flex; gap: .6rem; }
+
+.preview-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+
+@media (max-width: 640px) {
+  .preview-overlay { padding: 0; }
+  .preview-modal { border-radius: 0; height: 100%; }
+}

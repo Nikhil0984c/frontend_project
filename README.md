@@ -1,16 +1,43 @@
-# React + Vite
+# Portfolio Maker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Build, preview, and export a personal portfolio in the browser. No backend needed.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **13 visual themes** with a live preview while you edit.
+- **Export** as a single HTML file, or as a JSON backup you can import later.
+- **Share links.** "Copy share link" puts the whole portfolio in the URL after `#`, so the
+  link works without a server. Anyone with the link can open the portfolio at `/s`.
+  Accounts and passwords are never included.
+- **Job fit check.** Paste a job description to see which tools you already have, which
+  are missing, and which bullet points need a result or a stronger opening verb.
+- **Boot screen.** Every exported portfolio opens with an OS-style boot sequence built from your name and skills. Press any key (or tap) to skip it. It is not shown in the editor's live preview.
+- **One cursor ring.** A dot + ring cursor follows the mouse in the app, in downloaded files and in share links. Inside the live preview the app draws the only ring.
+- **Nav highlight.** The navigation highlights the section you are reading as you scroll.
+- **Import from GitHub.** Enter a username to pick public repos and add them as projects.
 
-## React Compiler
+## Run it
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev      # development server
+npm run build    # production build in dist/
+npm run lint
+```
 
-## Expanding the ESLint configuration
+## Notes
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Accounts are stored in the browser's localStorage in plain text. This is fine for
+  learning and demos, but a real product needs a backend with hashed passwords.
+- Share links get longer as the portfolio grows. Very long links can be cut off by some
+  chat apps. The app warns you when a link is over 6,000 characters.
+- The GitHub import uses GitHub's public API, which allows 60 requests per hour per IP.
+
+## Phase 1 additions (inside every exported portfolio, all 13 themes)
+
+- **Dark / light toggle + accent picker** (`themeToggle.js`): remembered in the visitor's browser.
+- **Timeline** (Education + Experience merged, newest first) and **Certs** (`timelineCerts.js`).
+- **Ctrl+K command palette** (`cmdPalette.js`) and **Ask my portfolio** (`askPortfolio.js`, offline keyword rules, no AI model).
+- **Contact form** (`contactForm.js`): opens a mailto draft; hidden when no contact email is set.
+- `portfolioWidgets.js` bundles the dock, palette, Ask panel and theme panel for `generatePortfolio.jsx`.
+- Dashboard has a new **Certs** editor; data field `certifications` (`{ id, name, issuer, year, link }`).

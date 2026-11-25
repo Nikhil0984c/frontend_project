@@ -1,85 +1,64 @@
+import { useMemo, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { loadPortfolio } from '../utils/storage';
+import { generatePortfolioHTML } from '../utils/generatePortfolio';
+import { shareCurrentPortfolio } from '../utils/shareLink';
 
+// Full-screen preview. It shows the exact page that "Download HTML" produces,
+// including the boot screen, cursor and nav highlight.
 export default function Portfolio() {
   const { user } = useAuth();
-  const data = loadPortfolio(user);
+  const [note, setNote] = useState('');
+  const frameRef = useRef(null);
+  const data = useMemo(() => loadPortfolio(user), [user]);
+  const html = useMemo(() => (data ? generatePortfolioHTML(data) : ''), [data]);
 
   if (!data) return <Navigate to="/dashboard" replace />;
 
+  const downloadHtml = () => {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const slug = (data.name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${slug || 'my'}-portfolio.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  const share = async () => {
+    try {
+      setNote(await shareCurrentPortfolio(data));
+    } catch (err) {
+      setNote('Could not create share link: ' + err.message);
+    }
+    setTimeout(() => setNote(''), 3500);
+  };
+
+  const printPage = () => frameRef.current?.contentWindow?.print();
+
   return (
-    <div className={`portfolio tpl-${data.template}`}>
-      <div className="portfolio-bar">
+    <div className="shared">
+      <div className="shared-bar">
         <Link className="btn secondary small" to="/dashboard">← Back to editor</Link>
-      </div>
-
-      <header className="pf-hero">
-        <span className="eyebrow">Portfolio</span>
-        <h1>{data.name || 'Your name'}</h1>
-        {data.tagline && <p className="pf-tagline">{data.tagline}</p>}
-        {data.bio && <p className="pf-bio">{data.bio}</p>}
-        <div className="pf-links">
-          {data.contactEmail && <a href={`mailto:${data.contactEmail}`}>Email</a>}
-          {data.github && <a href={data.github} target="_blank" rel="noreferrer">GitHub</a>}
-          {data.linkedin && <a href={data.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>}
+        <div className="portfolio-bar-actions">
+          {note && <span className="bar-note">{note}</span>}
+          <button type="button" className="btn secondary small" onClick={share}>Copy share link</button>
+          <button type="button" className="btn secondary small" onClick={printPage}>Print / PDF</button>
+          <button type="button" className="btn small" onClick={downloadHtml}>Download HTML</button>
         </div>
-      </header>
-
-      {data.skills.length > 0 && (
-        <section className="pf-section">
-          <h2>Skills</h2>
-          <div className="chips">
-            {data.skills.map((s) => <span key={s} className="chip">{s}</span>)}
-          </div>
-        </section>
-      )}
-
-      {data.experience.length > 0 && (
-        <section className="pf-section">
-          <h2>Experience</h2>
-          <ol className="timeline">
-            {data.experience.map((e) => (
-              <li key={e.id}>
-                <h3>{e.role}</h3>
-                <p className="item-meta">{e.company} · {e.duration}</p>
-                {e.description && <p className="item-desc">{e.description}</p>}
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-
-      {data.education.length > 0 && (
-        <section className="pf-section">
-          <h2>Education</h2>
-          <ol className="timeline">
-            {data.education.map((e) => (
-              <li key={e.id}>
-                <h3>{e.degree}</h3>
-                <p className="item-meta">
-                  {e.institution} · {e.years}{e.grade ? ` · ${e.grade}` : ''}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-
-      {data.projects.length > 0 && (
-        <section className="pf-section">
-          <h2>Projects</h2>
-          <div className="pf-projects">
-            {data.projects.map((p) => (
-              <article key={p.id} className="pf-project">
-                <h3>{p.title}</h3>
-                {p.description && <p className="item-desc">{p.description}</p>}
-                {p.link && <a href={p.link} target="_blank" rel="noreferrer">View project →</a>}
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+      </div>
+      <iframe
+        ref={frameRef}
+        title="Portfolio preview"
+        className="shared-frame"
+        srcDoc={html}
+        onLoad={(e) => e.currentTarget.focus()}
+        sandbox="allow-scripts allow-modals allow-popups allow-popups-to-escape-sandbox"
+      />
     </div>
   );
 }
